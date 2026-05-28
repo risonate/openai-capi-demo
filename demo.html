@@ -5,101 +5,117 @@
   <title>OpenAI Ads · End-to-End Demo</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
+    :root {
+      --ink: #10100f;
+      --accent: #10a37f;          /* OpenAI green */
+      --accent-dark: #0d8a6a;
+      --accent-light: #e7f7f1;
+      --accent-text: #0b6e57;
+      --paper: #f7f7f8;
+      --line: #e5e5e5;
+      --pane-head: #f7f7f8;
+    }
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font: 14px/1.5 -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif; background: #f5f5f0; color: #1a1a1a; overflow: hidden; }
-    .app { display: grid; grid-template-rows: auto 1fr 1fr; height: 100vh; gap: 1px; background: #ddd; }
-    header { background: #1a1a1a; color: white; padding: 9px 18px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
+    body { font: 14px/1.5 -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif; background: var(--paper); color: var(--ink); overflow: hidden; }
+    .app { display: grid; grid-template-rows: auto 1fr 1fr; height: 100vh; gap: 1px; background: var(--line); }
+    header { background: var(--ink); color: white; padding: 9px 18px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
     header h1 { font-size: 14px; font-weight: 600; }
-    header h1 .accent { color: #fb923c; }
+    header h1 .accent { color: var(--accent); }
     .controls { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; }
     .controls .lbl { font-size: 10.5px; color: #aaa; }
-    .controls select { background: #333; color: white; border: 1px solid #555; padding: 4px 7px; border-radius: 4px; font-size: 11px; }
-    .controls button { background: #b4451a; color: white; border: 0; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 600; }
-    .controls button:hover { background: #9a3209; }
+    .controls select { background: #2a2a2a; color: white; border: 1px solid #444; padding: 4px 7px; border-radius: 4px; font-size: 11px; }
+    .controls button { background: var(--accent); color: white; border: 0; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 600; }
+    .controls button:hover { background: var(--accent-dark); }
     .controls button:disabled { background: #555; cursor: not-allowed; }
-    .controls button.ghost { background: #333; }
-    .controls button.ghost:hover { background: #444; }
-    .mode-toggle { display: inline-flex; background: #333; border-radius: 5px; padding: 2px; }
+    .controls button.ghost { background: #2a2a2a; }
+    .controls button.ghost:hover { background: #3a3a3a; }
+    .mode-toggle { display: inline-flex; background: #2a2a2a; border-radius: 5px; padding: 2px; }
     .mode-toggle .mode-btn { background: transparent; color: #aaa; border: 0; padding: 5px 9px; border-radius: 4px; cursor: pointer; font-size: 10.5px; font-weight: 600; }
-    .mode-toggle .mode-btn.active { background: #b4451a; color: white; }
+    .mode-toggle .mode-btn.active { background: var(--accent); color: white; }
     .mode-toggle .mode-btn:hover:not(.active) { color: #ddd; background: transparent; }
-    .top-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1px; background: #ddd; overflow: hidden; }
+    .top-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1px; background: var(--line); overflow: hidden; }
     .pane { background: white; display: flex; flex-direction: column; overflow: hidden; transition: box-shadow 0.2s; position: relative; }
-    .pane.firing { box-shadow: inset 0 0 0 3px #fb923c; }
-    .pane-header { padding: 8px 14px; background: #f9f7f1; border-bottom: 1px solid #e0e0e0; font-weight: 600; font-size: 11px; display: flex; justify-content: space-between; align-items: center; color: #444; }
-    .pane-tag { background: #1a1a1a; color: white; padding: 1px 6px; border-radius: 3px; font-size: 9px; font-weight: 700; letter-spacing: 0.05em; }
-    .pane-tag.publisher { background: #1a1a1a; }
+    .pane.firing { box-shadow: inset 0 0 0 3px var(--accent); }
+    .pane-header { padding: 8px 14px; background: var(--pane-head); border-bottom: 1px solid var(--line); font-weight: 600; font-size: 11px; display: flex; justify-content: space-between; align-items: center; color: #444; }
+    .pane-tag { background: var(--ink); color: white; padding: 1px 6px; border-radius: 3px; font-size: 9px; font-weight: 700; letter-spacing: 0.05em; }
+    .pane-tag.publisher { background: var(--ink); }
     .pane-tag.browser   { background: #1e40af; }
-    .pane-tag.server    { background: #166534; }
+    .pane-tag.server    { background: var(--accent-dark); }
     .pane-content { flex: 1; padding: 12px 14px; overflow-y: auto; font-size: 13px; }
-    .pane-console { background: #1a1a1a; color: #d4f1c4; padding: 8px 12px; font: 10px/1.5 ui-monospace, "SF Mono", monospace; height: 110px; overflow-y: auto; border-top: 1px solid #333; flex-shrink: 0; }
+    .pane-console { background: var(--ink); color: #b9f3df; padding: 8px 12px; font: 10px/1.5 ui-monospace, "SF Mono", monospace; height: 110px; overflow-y: auto; border-top: 1px solid #333; flex-shrink: 0; }
     .pane-console .entry { margin-bottom: 2px; word-break: break-word; }
     .pane-console .entry.outgoing { color: #fbbf24; }
-    .pane-console .entry.incoming { color: #93c5fd; }
+    .pane-console .entry.incoming { color: #7dd3fc; }
     .pane-console .entry.info { color: #94a3b8; }
-    .pane-console .entry.note { color: #d4f1c4; opacity: 0.5; font-style: italic; }
-    .pane-console .entry.ok { color: #86efac; }
+    .pane-console .entry.note { color: #b9f3df; opacity: 0.5; font-style: italic; }
+    .pane-console .entry.ok { color: #6ee7b7; }
     .chat-bubble.user { background: #f4f4f4; padding: 8px 12px; border-radius: 14px; margin-bottom: 10px; display: inline-block; max-width: 90%; font-size: 12px; }
     .chat-bubble.assistant { padding: 2px 0; font-size: 12.5px; }
     .chat-bubble.assistant ul { margin: 6px 0 4px 16px; }
     .chat-bubble.assistant li { margin-bottom: 3px; font-size: 12px; }
-    .ad-card { border: 1px solid #e0e0e0; border-radius: 8px; padding: 10px; margin-top: 12px; cursor: pointer; transition: all 0.2s; background: white; }
-    .ad-card:hover { background: #fff8eb; border-color: #b4451a; transform: translateY(-1px); }
+    .ad-card { border: 1px solid var(--line); border-radius: 8px; padding: 10px; margin-top: 12px; cursor: pointer; transition: all 0.2s; background: white; }
+    .ad-card:hover { background: var(--accent-light); border-color: var(--accent); transform: translateY(-1px); }
     .ad-card .sponsored { font-size: 9px; color: #888; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 3px; font-weight: 600; }
-    .ad-card h3 { margin: 0 0 3px; font-size: 13px; color: #1a1a1a; }
+    .ad-card h3 { margin: 0 0 3px; font-size: 13px; color: var(--ink); }
     .ad-card p { margin: 0 0 3px; font-size: 11.5px; color: #555; }
-    .ad-card .url { color: #2563eb; font-size: 10.5px; }
-    .hint { background: #fff8eb; border: 1px dashed #f59e0b; padding: 7px 10px; border-radius: 5px; font-size: 11px; margin-top: 10px; color: #92400e; }
-    .hint strong { color: #78350f; }
+    .ad-card .url { color: var(--accent-text); font-size: 10.5px; }
+    .hint { background: var(--accent-light); border: 1px dashed var(--accent); padding: 7px 10px; border-radius: 5px; font-size: 11px; margin-top: 10px; color: var(--accent-text); }
+    .hint strong { color: var(--accent-text); }
     .browser-url { background: #f0f0f0; padding: 5px 10px; border-radius: 4px; font: 9.5px/1.4 ui-monospace, monospace; overflow-x: auto; white-space: nowrap; margin-bottom: 10px; }
-    .browser-url strong { color: #b4451a; }
+    .browser-url strong { color: var(--accent-text); }
     .advertiser-blank { text-align: center; padding: 30px 12px; color: #999; font-size: 11.5px; }
-    .product-card { border: 1px solid #e0e0e0; border-radius: 7px; padding: 11px; margin-bottom: 10px; }
+    .product-card { border: 1px solid var(--line); border-radius: 7px; padding: 11px; margin-bottom: 10px; }
     .product-card h3 { font-size: 12.5px; margin-bottom: 3px; }
-    .product-card .price { font-size: 14px; color: #b4451a; font-weight: 700; margin: 4px 0; }
+    .product-card .price { font-size: 14px; color: var(--accent-text); font-weight: 700; margin: 4px 0; }
     .product-card .desc { color: #666; font-size: 11px; margin-bottom: 8px; }
-    .btn { background: #b4451a; color: white; border: 0; padding: 7px 12px; font-size: 11.5px; font-weight: 600; border-radius: 4px; cursor: pointer; margin-right: 4px; }
-    .btn:hover { background: #9a3209; }
-    .btn.secondary { background: #333; }
-    .btn.secondary:hover { background: #444; }
+    .btn { background: var(--accent); color: white; border: 0; padding: 7px 12px; font-size: 11.5px; font-weight: 600; border-radius: 4px; cursor: pointer; margin-right: 4px; }
+    .btn:hover { background: var(--accent-dark); }
+    .btn.secondary { background: #2a2a2a; }
+    .btn.secondary:hover { background: #3a3a3a; }
     .server-content { background: #0c1117; color: #c9d1d9; padding: 12px 14px; font: 11px/1.55 ui-monospace, "SF Mono", monospace; flex: 1; overflow-y: auto; }
     .server-content .line { margin-bottom: 2px; }
-    .server-content .ok { color: #86efac; }
+    .server-content .ok { color: #6ee7b7; }
     .server-content .out { color: #fbbf24; }
-    .server-content .in { color: #93c5fd; }
+    .server-content .in { color: #7dd3fc; }
     .server-content .note { color: #6b7280; font-style: italic; }
     .openai-pane { background: white; padding: 12px 18px; overflow-y: auto; display: flex; flex-direction: column; }
-    .openai-pane h3 { font-size: 13px; font-weight: 700; margin-bottom: 8px; color: #1a1a1a; display: flex; align-items: center; gap: 8px; }
-    .openai-pane h3::before { content: ''; width: 8px; height: 8px; background: #fb923c; border-radius: 50%; }
-    .openai-pane h3 .mode-badge { margin-left: auto; font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 10px; background: #f3f4f6; color: #555; text-transform: uppercase; letter-spacing: 0.04em; }
-    .openai-pane h3 .mode-badge.aggressive { background: #fef3c7; color: #92400e; }
+    .openai-pane h3 { font-size: 13px; font-weight: 700; margin-bottom: 8px; color: var(--ink); display: flex; align-items: center; gap: 8px; }
+    .openai-pane h3::before { content: ''; width: 8px; height: 8px; background: var(--accent); border-radius: 50%; }
+    .openai-pane h3 .mode-badge { margin-left: auto; font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 10px; background: #f0f0f0; color: #555; text-transform: uppercase; letter-spacing: 0.04em; }
+    .openai-pane h3 .mode-badge.aggressive { background: var(--accent-light); color: var(--accent-text); }
     .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 10px; }
-    .stat-card { background: #f9f7f1; border: 1px solid #e8e3d6; padding: 7px 10px; border-radius: 5px; }
+    .stat-card { background: var(--pane-head); border: 1px solid var(--line); padding: 7px 10px; border-radius: 5px; }
     .stat-card .label { font-size: 9.5px; color: #666; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; }
-    .stat-card .value { font-size: 20px; font-weight: 700; color: #1a1a1a; margin-top: 1px; line-height: 1.1; }
-    .stat-card.dedup { background: #fdf3eb; border-color: #f59e0b; }
-    .stat-card.dedup .value { color: #b4451a; }
-    .stat-card.dedup .label { color: #92400e; }
+    .stat-card .value { font-size: 20px; font-weight: 700; color: var(--ink); margin-top: 1px; line-height: 1.1; }
+    .stat-card.dedup { background: var(--accent-light); border-color: var(--accent); }
+    .stat-card.dedup .value { color: var(--accent-text); }
+    .stat-card.dedup .label { color: var(--accent-text); }
+    .readiness-row { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; margin-bottom: 9px; }
+    .readiness-card { background: #fafafa; border: 1px solid var(--line); border-radius: 5px; padding: 6px 8px; min-height: 42px; }
+    .readiness-card .label { font-size: 9px; color: #666; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700; }
+    .readiness-card .value { font-size: 11px; color: #555; line-height: 1.25; margin-top: 2px; }
+    .readiness-card.ready { background: var(--accent-light); border-color: var(--accent); }
+    .readiness-card.ready .value { color: var(--accent-text); font-weight: 700; }
     .events-table { width: 100%; border-collapse: collapse; font-size: 11px; }
-    .events-table th { text-align: left; padding: 5px 7px; background: #f5f5f0; font-size: 9.5px; color: #666; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; border-bottom: 1px solid #ddd; }
+    .events-table th { text-align: left; padding: 5px 7px; background: var(--pane-head); font-size: 9.5px; color: #666; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; border-bottom: 1px solid var(--line); }
     .events-table td { padding: 5px 7px; border-bottom: 1px solid #f0f0f0; font-family: ui-monospace, monospace; font-size: 10.5px; }
-    .events-table tr.deduped { background: #fdf3eb; }
-    .events-table tr.deduped td { color: #92400e; }
+    .events-table tr.deduped { background: var(--accent-light); }
+    .events-table tr.deduped td { color: var(--accent-text); }
     .events-table .src-pill { display: inline-block; padding: 1px 5px; border-radius: 3px; font-size: 9px; font-weight: 700; letter-spacing: 0.03em; }
-    .src-pill.chatgpt { background: #1a1a1a; color: white; }
+    .src-pill.chatgpt { background: var(--ink); color: white; }
     .src-pill.pixel   { background: #dbeafe; color: #1e40af; }
-    .src-pill.capi    { background: #dcfce7; color: #166534; }
-    .check { color: #16a34a; font-weight: 700; }
+    .src-pill.capi    { background: #d1f0e6; color: var(--accent-text); }
+    .check { color: var(--accent); font-weight: 700; }
     .arrows-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 200; }
     .packet { position: absolute; padding: 3px 9px; border-radius: 12px; font-size: 10.5px; font-weight: 600; color: white; box-shadow: 0 4px 14px rgba(0,0,0,0.25); opacity: 0; transform: translate(-50%, -50%); transition: all 1.2s cubic-bezier(0.4, 0, 0.2, 1); pointer-events: none; white-space: nowrap; }
     .packet.show { opacity: 1; }
     .packet.pixel   { background: #2563eb; }
-    .packet.capi    { background: #16a34a; }
-    .packet.chatgpt { background: #1a1a1a; }
+    .packet.capi    { background: var(--accent); }
+    .packet.chatgpt { background: var(--ink); }
     .packet.internal { background: #6366f1; }
-    .step-indicator { position: fixed; bottom: 14px; left: 50%; transform: translateX(-50%); background: rgba(26,26,26,0.95); color: white; padding: 9px 16px; border-radius: 7px; font-size: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.2); z-index: 300; opacity: 0; transition: opacity 0.3s; max-width: 80vw; pointer-events: none; }
+    .step-indicator { position: fixed; bottom: 14px; left: 50%; transform: translateX(-50%); background: rgba(16,16,15,0.96); color: white; padding: 9px 16px; border-radius: 7px; font-size: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.2); z-index: 300; opacity: 0; transition: opacity 0.3s; max-width: 80vw; pointer-events: none; }
     .step-indicator.show { opacity: 1; }
-    .step-indicator .step-num { color: #fb923c; font-weight: 700; margin-right: 7px; }
+    .step-indicator .step-num { color: var(--accent); font-weight: 700; margin-right: 7px; }
   </style>
 </head>
 <body>
@@ -171,6 +187,13 @@
         <div class="stat-card"><div class="label">CAPI Events</div><div class="value" id="stat-capi">0</div></div>
         <div class="stat-card dedup"><div class="label">✓ Deduped Conversions</div><div class="value" id="stat-dedup">0</div></div>
       </div>
+      <div class="readiness-row" aria-label="Launch Readiness">
+        <div class="readiness-card" id="ready-account"><div class="label">API Account</div><div class="value">pending</div></div>
+        <div class="readiness-card" id="ready-campaign"><div class="label">Campaign</div><div class="value">paused</div></div>
+        <div class="readiness-card" id="ready-creative"><div class="label">Creative</div><div class="value">review</div></div>
+        <div class="readiness-card" id="ready-measurement"><div class="label">Measurement</div><div class="value">waiting</div></div>
+        <div class="readiness-card" id="ready-insights"><div class="label">Insights</div><div class="value">not checked</div></div>
+      </div>
       <table class="events-table">
         <thead><tr><th>Time</th><th>Source</th><th>Event</th><th>Identifier</th><th>Status</th></tr></thead>
         <tbody id="events-body"><tr><td colspan="5" style="text-align: center; color: #999; padding: 14px;">Waiting for events…</td></tr></tbody>
@@ -183,7 +206,7 @@
 
   <script>
     const state = {
-      mode: 'conservative',     // 'conservative' | 'aggressive'
+      mode: 'conservative',
       oppref: null,
       orderId: null,
       currentClicks: 0,
@@ -230,8 +253,6 @@
       checkAndDedupe(identifier);
     }
 
-    // Dedup any identifier that has BOTH a pixel and a capi event.
-    // Conversion counter only counts deduped order_created identifiers.
     function checkAndDedupe(id) {
       const matching = [];
       $('events-body').querySelectorAll('tr').forEach(r => { if (r.dataset.identifier === id) matching.push(r); });
@@ -258,6 +279,12 @@
       $('stat-pixel').textContent = state.stats.pixel;
       $('stat-capi').textContent = state.stats.capi;
       $('stat-dedup').textContent = state.stats.dedup;
+    }
+
+    function setReady(id, value, isReady = true) {
+      const card = $(id);
+      card.querySelector('.value').textContent = value;
+      card.classList.toggle('ready', isReady);
     }
 
     async function sendPacket(sourcePaneId, label, kind) {
@@ -295,7 +322,6 @@
 
     const rand = (prefix) => prefix + '_' + Math.random().toString(36).slice(2, 8);
 
-    // Mirror a non-conversion event via CAPI (aggressive mode only)
     async function mirrorViaCapi(eventType, id) {
       await delay(getSpeed() / 2);
       highlight('pane-adv-server', true);
@@ -315,6 +341,11 @@
       state.isPlaying = true;
       $('play').disabled = true;
       await delay(400);
+
+      setReady('ready-account', 'verified');
+      setReady('ready-campaign', 'paused setup');
+      setReady('ready-creative', 'approved');
+      setReady('ready-insights', 'baseline');
 
       showStep(1, 'ChatGPT serves ad → fires internal impression telemetry');
       highlight('pane-chatgpt', true);
@@ -388,7 +419,7 @@
       }
 
       else if (action === 'add_to_cart') {
-        state.orderId = null;       // new shopping intent → fresh order session
+        state.orderId = null;
         state.currentClicks = 0;
         showStep(4, 'Add to cart → pixel fires items_added' + (aggressive ? ' (mirrored via CAPI)' : ' (no CAPI — conservative)'));
         const iacId = rand('evt_iac');
@@ -442,7 +473,6 @@
         await delay(getSpeed() / 2);
         highlight('pane-adv-browser', false);
 
-        // order_created ALWAYS fires CAPI (both modes) — it's the key conversion
         await delay(getSpeed() / 2);
         highlight('pane-adv-server', true);
         serverLog(``, '');
@@ -458,6 +488,8 @@
         serverLog(isRepeat
           ? `✓ OpenAI saw id "${orderId}" multiple times → still ONE conversion`
           : `✓ OpenAI matched pixel + CAPI by id → ONE conversion`, 'ok');
+        setReady('ready-measurement', 'dedup healthy');
+        setReady('ready-insights', 'ready for QA');
         await delay(getSpeed());
         highlight('pane-adv-server', false);
       }
@@ -491,11 +523,15 @@
       $('console-adv-browser').innerHTML = '<div class="entry note">// oaiq pixel events (browser-side)</div>';
       $('server-content').innerHTML = '<div class="line note">$ node server.js</div><div class="line ok">[backend] Express listening on :3000</div><div class="line note">// Waiting for webhooks…</div>';
       $('adv-browser-content').innerHTML = '<div class="advertiser-blank">← Click sponsored card to land here.</div>';
+      setReady('ready-account', 'pending', false);
+      setReady('ready-campaign', 'paused', false);
+      setReady('ready-creative', 'review', false);
+      setReady('ready-measurement', 'waiting', false);
+      setReady('ready-insights', 'not checked', false);
       $('arrows').innerHTML = '';
       hideStep();
     }
 
-    // Mode toggle
     document.querySelectorAll('.mode-btn').forEach(btn => {
       btn.onclick = () => {
         if (state.isPlaying) return;

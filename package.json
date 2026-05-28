@@ -3,7 +3,10 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "demo:capi": "node send-events.js",
+    "demo:walkthrough": "node walkthrough.js",
+    "demo:ads-api": "node ads-api-workflow.js",
+    "test": "node --check send-events.js && node --check walkthrough.js && node --check ads-api-workflow.js && node smoke-test.js"
   },
   "keywords": [],
   "author": "",

@@ -9,14 +9,17 @@ Built against the [public docs](https://developers.openai.com/ads) as a learning
 | File | Purpose |
 |---|---|
 | `send-events.js` | Server-side CAPI. The production-style reference: builds + sends conversion events to `bzr.openai.com/v1/events` |
+| `ads-api-workflow.js` | Dry-run Advertiser API workflow: account check, creative upload, campaign, ad group, ad, and insights |
 | `walkthrough.js` | Interactive step-through of `send-events.js`. Pauses between each step so you can see the flow build up |
 | `pixel.html` | Browser-side reference. The `oaiq()` SDK loaded in `<head>`, plus buttons that fire sample events you can inspect in DevTools |
 | `demo.html` | Single-page end-to-end visualization. ChatGPT + advertiser browser + advertiser server + OpenAI dashboard, animated event packets, live reconciliation, and a **Conservative ↔ Aggressive CAPI toggle** |
+| `DEMO_GUIDE.md` | Seven-minute interview talk track, source anchors, failure modes, and close-out narrative |
+| `study-guide/index.html` | Polished browser study guide for rehearsing the OpenAI Ads Solutions interview story |
 
 ## Quick start
 
 ```bash
-git clone https://github.com/stygianmessiah/openai-capi-demo.git
+git clone https://github.com/risonate/openai-capi-demo.git
 cd openai-capi-demo
 npm install
 
@@ -31,6 +34,15 @@ open pixel.html
 
 # 4. Open the full end-to-end visualization
 open demo.html
+
+# 5. Open the interview study guide
+open study-guide/index.html
+
+# 6. Dry-run Ads API launch workflow
+npm run demo:ads-api
+
+# 7. Smoke checks
+npm test
 ```
 
 With fake keys in `.env`, `send-events.js` returns 401 — that's expected, the request is correctly shaped, OpenAI just rejects auth. To inspect the actual payload, point `ENDPOINT` at a https://webhook.site URL.
@@ -158,6 +170,36 @@ See `send-events.js` for the production-style implementation, `walkthrough.js` f
 
 ---
 
+## How the Ads API launch flow works
+
+The Advertiser API side of the demo is intentionally dry-run only. A real campaign create call can create live account objects, so `ads-api-workflow.js` prints the request sequence and validates the payload contract locally.
+
+```
+  1. GET  /ad_account
+       Confirm the API key maps to the expected advertiser account.
+
+  2. POST /upload
+       Upload the creative image and retain file_id.
+
+  3. POST /campaigns
+       Create the campaign paused with budget and country targeting.
+
+  4. POST /ad_groups
+       Attach context_hints and bidding_config.
+
+  5. POST /ads
+       Create a chat_card creative with title, body, target_url, and file_id.
+
+  6. GET  /campaigns/{id}/insights
+       Pull daily performance and compare conversions against measurement logs.
+```
+
+The interview point: campaign execution and measurement launch are one system. I would not recommend scaling spend until the API objects, creative review, pixel, CAPI, and insights reconciliation are all green.
+
+See `DEMO_GUIDE.md` for the full interview talk track.
+
+---
+
 ## Why both pixel AND CAPI?
 
 The pixel and CAPI are two independent signals for the same conversions. Each has gaps the other covers:
@@ -209,4 +251,4 @@ Pixel handles real-time browser conversions. CAPI handles reliability, ITP/ad-bl
 
 ## Built by
 
-[Rishabh Natarajan](https://linkedin.com/in/rishabhnatarajan) · 13 years in adtech across Magnite, TripleLift, Amazon
+[Rishabh Natarajan](https://linkedin.com/in/rishabhnatarajan) · 11+ years in adtech across Magnite, TripleLift, Amazon

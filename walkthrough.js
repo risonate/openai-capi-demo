@@ -34,7 +34,7 @@ async function main() {
   note('When the script started, dotenv read .env and copied each key/value');
   note('into process.env. Here\'s what got loaded:\n');
   console.log('    PIXEL_ID  = ' + process.env.OPENAI_ADS_PIXEL_ID);
-  console.log('    API_KEY   = ' + (process.env.OPENAI_ADS_API_KEY || '').slice(0, 12) + '... (truncated)');
+  console.log('    API_KEY   = ' + (process.env.OPENAI_ADS_API_KEY ? '<set>' : '<missing>'));
   console.log('    CAPI_BASE = ' + process.env.OPENAI_CAPI_BASE);
   console.log('');
   note('In production, these would be real values pulled from a secrets manager');
@@ -107,7 +107,7 @@ async function main() {
   header('STEP 5 of 5 · POST to OpenAI');
   note('Sending the request now:\n');
   console.log('    POST ' + ENDPOINT);
-  console.log('    Authorization: Bearer ' + API_KEY.slice(0, 12) + '... (truncated)');
+  console.log('    Authorization: Bearer <OPENAI_ADS_API_KEY>');
   console.log('    Content-Type: application/json');
   console.log('');
   note('Firing...\n');

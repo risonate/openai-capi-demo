@@ -35,25 +35,31 @@
   </script>
 
   <style>
+    :root {
+      --accent: #10a37f;       /* OpenAI green */
+      --accent-dark: #0d8a6a;
+      --accent-light: #e7f7f1;
+      --ink: #10100f;
+    }
     * { box-sizing: border-box; }
     body {
       font: 15px/1.55 -apple-system, BlinkMacSystemFont, sans-serif;
       max-width: 760px;
       margin: 48px auto;
       padding: 0 24px;
-      color: #1a1a1a;
+      color: var(--ink);
     }
     h1 { font-size: 28px; margin-bottom: 8px; }
-    h2 { font-size: 19px; margin-top: 36px; padding-top: 24px; border-top: 1px solid #ddd; }
+    h2 { font-size: 19px; margin-top: 36px; padding-top: 24px; border-top: 1px solid #e5e5e5; }
     .sub { color: #666; margin-top: 0; }
     .box {
-      background: #faf8f3;
-      border-left: 3px solid #b4451a;
+      background: #f7f7f8;
+      border-left: 3px solid var(--accent);
       padding: 14px 18px;
       border-radius: 4px;
       margin: 20px 0;
     }
-    .box.success { background: #f0f9f0; border-color: #16a34a; }
+    .box.success { background: var(--accent-light); border-color: var(--accent); }
     code {
       background: #ececec;
       padding: 2px 6px;
@@ -62,15 +68,15 @@
       font-family: ui-monospace, SFMono-Regular, monospace;
     }
     pre {
-      background: #1a1a1a;
-      color: #d4f1c4;
+      background: var(--ink);
+      color: #b9f3df;
       padding: 14px 16px;
       border-radius: 6px;
       overflow-x: auto;
       font: 12px/1.5 ui-monospace, SFMono-Regular, monospace;
     }
     button {
-      background: #b4451a;
+      background: var(--accent);
       color: white;
       border: 0;
       padding: 11px 20px;
@@ -80,7 +86,7 @@
       cursor: pointer;
       margin: 4px 8px 4px 0;
     }
-    button:hover { background: #9a3209; }
+    button:hover { background: var(--accent-dark); }
     button:disabled { background: #ccc; cursor: not-allowed; }
     .small { font-size: 12px; color: #777; }
   </style>

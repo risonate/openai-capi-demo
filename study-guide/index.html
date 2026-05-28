@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>OpenAI Ads Solutions Study Guide</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <p class="eyebrow">Interview study guide</p>
+      <h1>OpenAI Ads Solutions Engineering</h1>
+    </div>
+    <div class="status-card">
+      <span class="status-dot"></span>
+      <div>
+        <strong>Role appears open</strong>
+        <span>Verified May 28, 2026 from OpenAI Careers</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="layout">
+    <aside class="toc" aria-label="Study guide navigation">
+      <a href="#thesis">Thesis</a>
+      <a href="#map">Role Map</a>
+      <a href="#lifecycle">Launch Flow</a>
+      <a href="#architecture">Architecture</a>
+      <a href="#dedup">Dedup</a>
+      <a href="#api">Ads API</a>
+      <a href="#debug">Debugging</a>
+      <a href="#answers">Answers</a>
+      <a href="#rehearsal">Rehearsal</a>
+      <a href="#sources">Sources</a>
+    </aside>
+
+    <div class="content">
+      <section class="hero" id="thesis">
+        <div class="hero-copy">
+          <p class="eyebrow">Memorize this framing</p>
+          <h2>I built a miniature advertiser launch lifecycle for OpenAI Ads.</h2>
+          <p>
+            Campaign setup through the Advertiser API, browser measurement through the Pixel,
+            resilient server-side conversion delivery through CAPI, deduplication, launch-readiness
+            checks, and post-launch insights QA.
+          </p>
+        </div>
+        <div class="quote-panel">
+          <span class="label">Interview close</span>
+          <p>“Campaign execution and measurement quality are one system. I would not recommend scaling spend until the API objects, creative review, pixel, CAPI, dedup, and insights reconciliation are all green.”</p>
+        </div>
+      </section>
+
+      <section id="map">
+        <div class="section-head">
+          <p class="eyebrow">Role-to-demo fit</p>
+          <h2>The job description, translated into your demo</h2>
+        </div>
+        <div class="fit-grid">
+          <article><strong>Technical discovery</strong><span>Data flows, martech stack, measurement requirements, activation goals.</span></article>
+          <article><strong>Implementation design</strong><span>Pixel, CAPI, server-to-server events, identity signals, offline conversions.</span></article>
+          <article><strong>Launch readiness</strong><span>Paused campaigns, creative review, event smoke tests, reporting baseline.</span></article>
+          <article><strong>Troubleshooting</strong><span>Signal loss, dedup mismatches, malformed batches, attribution gaps.</span></article>
+          <article><strong>Enablement</strong><span>Demo, runbook, failure matrix, repeatable customer-facing narrative.</span></article>
+        </div>
+      </section>
+
+      <section id="lifecycle">
+        <div class="section-head">
+          <p class="eyebrow">Customer lifecycle</p>
+          <h2>The seven-step launch story</h2>
+        </div>
+        <div class="pipeline">
+          <div><b>1</b><span>Advertiser objective</span></div>
+          <div><b>2</b><span>Technical discovery</span></div>
+          <div><b>3</b><span>Ads API setup</span></div>
+          <div><b>4</b><span>Pixel install</span></div>
+          <div><b>5</b><span>CAPI delivery</span></div>
+          <div><b>6</b><span>Dedup QA</span></div>
+          <div><b>7</b><span>Insights check</span></div>
+        </div>
+        <div class="callout">
+          <strong>Your senior-SA move:</strong>
+          <span>Do not present the demo as code first. Present it as risk reduction before spend.</span>
+        </div>
+      </section>
+
+      <section id="architecture">
+        <div class="section-head">
+          <p class="eyebrow">System diagram</p>
+          <h2>Pixel, CAPI, Advertiser API, and Insights in one view</h2>
+        </div>
+        <div class="diagram-card">
+          <svg viewBox="0 0 1100 560" role="img" aria-label="OpenAI Ads launch and measurement architecture">
+            <defs>
+              <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+                <path d="M0,0 L0,6 L9,3 z" fill="#49736a"></path>
+              </marker>
+            </defs>
+            <g class="node dark" transform="translate(60 70)"><rect></rect><text x="25" y="42">ChatGPT ad surface</text><text x="25" y="72">impression + click</text></g>
+            <g class="node blue" transform="translate(360 70)"><rect></rect><text x="25" y="42">Advertiser browser</text><text x="25" y="72">pixel captures oppref</text></g>
+            <g class="node green" transform="translate(690 70)"><rect></rect><text x="25" y="42">OpenAI Pixel</text><text x="25" y="72">browser events</text></g>
+            <g class="node amber" transform="translate(360 270)"><rect></rect><text x="25" y="42">Advertiser backend</text><text x="25" y="72">order + webhook</text></g>
+            <g class="node green" transform="translate(690 270)"><rect></rect><text x="25" y="42">Conversions API</text><text x="25" y="72">server events</text></g>
+            <g class="node" transform="translate(875 170)"><rect></rect><text x="25" y="42">Reconciliation</text><text x="25" y="72">dedup + attribution</text></g>
+            <g class="node coral" transform="translate(875 385)"><rect></rect><text x="25" y="42">Insights API</text><text x="25" y="72">reporting QA</text></g>
+            <g class="node api" transform="translate(60 385)"><rect></rect><text x="25" y="42">Advertiser API</text><text x="25" y="72">campaign objects</text></g>
+            <path class="arrow" d="M260 125 L360 125"></path>
+            <path class="arrow" d="M560 125 L690 125"></path>
+            <path class="arrow" d="M560 325 L690 325"></path>
+            <path class="arrow" d="M450 175 L450 270"></path>
+            <path class="arrow" d="M890 125 L925 170"></path>
+            <path class="arrow" d="M890 325 L925 270"></path>
+            <path class="arrow" d="M955 300 L955 385"></path>
+            <path class="arrow" d="M260 440 L875 440"></path>
+            <text class="edge-label" x="282" y="105">redirect with oppref</text>
+            <text class="edge-label" x="575" y="105">oaiq measure</text>
+            <text class="edge-label" x="575" y="306">POST events</text>
+            <text class="edge-label" x="292" y="458">campaigns, ad groups, ads, files</text>
+          </svg>
+        </div>
+      </section>
+
+      <section id="dedup">
+        <div class="section-head">
+          <p class="eyebrow">Load-bearing concept</p>
+          <h2>The dedup contract</h2>
+        </div>
+        <div class="dedup-grid">
+          <article class="signal-card">
+            <span class="label">Browser Pixel</span>
+            <h3>event_id = order_12345</h3>
+            <p>Fast, browser-native, automatically captures `oppref`, but can be lost to browser constraints.</p>
+          </article>
+          <article class="signal-card">
+            <span class="label">Server CAPI</span>
+            <h3>id = order_12345</h3>
+            <p>Reliable, server-side, good for offline or webhook events, but must manually replay `oppref`.</p>
+          </article>
+          <article class="signal-card result">
+            <span class="label">OpenAI Reconciliation</span>
+            <h3>One counted conversion</h3>
+            <p>Same Pixel ID, same event name, same event identifier. That is the measurement contract.</p>
+          </article>
+        </div>
+      </section>
+
+      <section id="api">
+        <div class="section-head">
+          <p class="eyebrow">Advertiser API</p>
+          <h2>Launch workflow you can defend</h2>
+        </div>
+        <div class="api-rail">
+          <div><code>GET /ad_account</code><span>Confirm account scope and auth.</span></div>
+          <div><code>POST /upload</code><span>Upload creative asset and retain file_id.</span></div>
+          <div><code>POST /campaigns</code><span>Create campaign paused before spend.</span></div>
+          <div><code>POST /ad_groups</code><span>Add context hints, bid config, and status.</span></div>
+          <div><code>POST /ads</code><span>Create chat card and wait for review_status.</span></div>
+          <div><code>GET /insights</code><span>Compare delivery and conversion metrics.</span></div>
+        </div>
+      </section>
+
+      <section id="debug">
+        <div class="section-head">
+          <p class="eyebrow">Troubleshooting matrix</p>
+          <h2>How to sound calm when something breaks</h2>
+        </div>
+        <table>
+          <thead><tr><th>Symptom</th><th>Likely cause</th><th>Your response</th></tr></thead>
+          <tbody>
+            <tr><td>CAPI under-attributes</td><td>Missing `oppref`</td><td>Capture landing URL token and persist it in first-party context.</td></tr>
+            <tr><td>Conversions double count</td><td>Pixel `event_id` and CAPI `id` mismatch</td><td>Use commerce source-of-truth ID in both places.</td></tr>
+            <tr><td>Batch fails</td><td>One malformed event fails whole batch</td><td>Validate locally, bisect failures, retry only valid records.</td></tr>
+            <tr><td>Insights mismatch BI</td><td>Time zone, attribution window, filters, source-of-truth mismatch</td><td>Compare raw orders, pixel logs, CAPI acknowledgements, and Insights rows.</td></tr>
+            <tr><td>Spend starts too early</td><td>Campaign enabled before measurement QA</td><td>Create paused, verify measurement, then activate.</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="answers">
+        <div class="section-head">
+          <p class="eyebrow">Answer bank</p>
+          <h2>High-probability interview prompts</h2>
+        </div>
+        <div class="answer-grid">
+          <article><h3>Why Pixel plus CAPI?</h3><p>Pixel gives real-time browser context and automatic `oppref`. CAPI gives resilient server-side delivery. Dedup keeps coverage high without inflating conversions.</p></article>
+          <article><h3>What is the hardest part?</h3><p>Not the POST. The hard part is preserving attribution context, stable IDs, consent routing, validation, and discrepancy debugging.</p></article>
+          <article><h3>How do you protect user trust?</h3><p>Collect only what is needed, respect opt-out and consent, avoid unnecessary user fields, and gate spend until measurement is honest.</p></article>
+          <article><h3>What do you escalate?</h3><p>Recurring implementation confusion, missing diagnostics, unclear errors, or API gaps that block repeatable advertiser onboarding.</p></article>
+        </div>
+      </section>
+
+      <section id="rehearsal">
+        <div class="section-head">
+          <p class="eyebrow">Rehearsal script</p>
+          <h2>Seven-minute walkthrough</h2>
+        </div>
+        <ol class="timeline">
+          <li><strong>0-1 min:</strong> Frame the advertiser problem and business risk.</li>
+          <li><strong>1-2 min:</strong> Show dry-run Ads API launch plan and paused-object discipline.</li>
+          <li><strong>2-4 min:</strong> Run the visual demo in conservative mode.</li>
+          <li><strong>4-5 min:</strong> Toggle aggressive mode and explain server-side tagging tradeoffs.</li>
+          <li><strong>5-6 min:</strong> Open CAPI code and explain `id`, `oppref`, batching, and validation.</li>
+          <li><strong>6-7 min:</strong> Close with insights reconciliation and readiness-to-scale decision.</li>
+        </ol>
+      </section>
+
+      <section id="sources">
+        <div class="section-head">
+          <p class="eyebrow">Official sources</p>
+          <h2>What this guide is grounded in</h2>
+        </div>
+        <div class="source-grid">
+          <a href="https://openai.com/careers/solutions-engineering-ads-solutions-new-york-city/">OpenAI role posting</a>
+          <a href="https://developers.openai.com/ads/measurement-pixel">JavaScript Pixel</a>
+          <a href="https://developers.openai.com/ads/conversions-api">Conversions API</a>
+          <a href="https://developers.openai.com/ads/api-overview">Advertiser API overview</a>
+          <a href="https://developers.openai.com/ads/api-reference/insights">Insights API</a>
+        </div>
+      </section>
+    </div>
+  </main>
+</body>
+</html>
