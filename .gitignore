@@ -1,0 +1,16 @@
+# Local environment & secrets
+.env
+
+# Node
+node_modules/
+npm-debug.log
+yarn-error.log
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/

@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>OpenAI Ads · End-to-End Demo</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font: 14px/1.5 -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif; background: #f5f5f0; color: #1a1a1a; overflow: hidden; }
+    .app { display: grid; grid-template-rows: auto 1fr 1fr; height: 100vh; gap: 1px; background: #ddd; }
+    header { background: #1a1a1a; color: white; padding: 9px 18px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
+    header h1 { font-size: 14px; font-weight: 600; }
+    header h1 .accent { color: #fb923c; }
+    .controls { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; }
+    .controls .lbl { font-size: 10.5px; color: #aaa; }
+    .controls select { background: #333; color: white; border: 1px solid #555; padding: 4px 7px; border-radius: 4px; font-size: 11px; }
+    .controls button { background: #b4451a; color: white; border: 0; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 600; }
+    .controls button:hover { background: #9a3209; }
+    .controls button:disabled { background: #555; cursor: not-allowed; }
+    .controls button.ghost { background: #333; }
+    .controls button.ghost:hover { background: #444; }
+    .mode-toggle { display: inline-flex; background: #333; border-radius: 5px; padding: 2px; }
+    .mode-toggle .mode-btn { background: transparent; color: #aaa; border: 0; padding: 5px 9px; border-radius: 4px; cursor: pointer; font-size: 10.5px; font-weight: 600; }
+    .mode-toggle .mode-btn.active { background: #b4451a; color: white; }
+    .mode-toggle .mode-btn:hover:not(.active) { color: #ddd; background: transparent; }
+    .top-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1px; background: #ddd; overflow: hidden; }
+    .pane { background: white; display: flex; flex-direction: column; overflow: hidden; transition: box-shadow 0.2s; position: relative; }
+    .pane.firing { box-shadow: inset 0 0 0 3px #fb923c; }
+    .pane-header { padding: 8px 14px; background: #f9f7f1; border-bottom: 1px solid #e0e0e0; font-weight: 600; font-size: 11px; display: flex; justify-content: space-between; align-items: center; color: #444; }
+    .pane-tag { background: #1a1a1a; color: white; padding: 1px 6px; border-radius: 3px; font-size: 9px; font-weight: 700; letter-spacing: 0.05em; }
+    .pane-tag.publisher { background: #1a1a1a; }
+    .pane-tag.browser   { background: #1e40af; }
+    .pane-tag.server    { background: #166534; }
+    .pane-content { flex: 1; padding: 12px 14px; overflow-y: auto; font-size: 13px; }
+    .pane-console { background: #1a1a1a; color: #d4f1c4; padding: 8px 12px; font: 10px/1.5 ui-monospace, "SF Mono", monospace; height: 110px; overflow-y: auto; border-top: 1px solid #333; flex-shrink: 0; }
+    .pane-console .entry { margin-bottom: 2px; word-break: break-word; }
+    .pane-console .entry.outgoing { color: #fbbf24; }
+    .pane-console .entry.incoming { color: #93c5fd; }
+    .pane-console .entry.info { color: #94a3b8; }
+    .pane-console .entry.note { color: #d4f1c4; opacity: 0.5; font-style: italic; }
+    .pane-console .entry.ok { color: #86efac; }
+    .chat-bubble.user { background: #f4f4f4; padding: 8px 12px; border-radius: 14px; margin-bottom: 10px; display: inline-block; max-width: 90%; font-size: 12px; }
+    .chat-bubble.assistant { padding: 2px 0; font-size: 12.5px; }
+    .chat-bubble.assistant ul { margin: 6px 0 4px 16px; }
+    .chat-bubble.assistant li { margin-bottom: 3px; font-size: 12px; }
+    .ad-card { border: 1px solid #e0e0e0; border-radius: 8px; padding: 10px; margin-top: 12px; cursor: pointer; transition: all 0.2s; background: white; }
+    .ad-card:hover { background: #fff8eb; border-color: #b4451a; transform: translateY(-1px); }
+    .ad-card .sponsored { font-size: 9px; color: #888; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 3px; font-weight: 600; }
+    .ad-card h3 { margin: 0 0 3px; font-size: 13px; color: #1a1a1a; }
+    .ad-card p { margin: 0 0 3px; font-size: 11.5px; color: #555; }
+    .ad-card .url { color: #2563eb; font-size: 10.5px; }
+    .hint { background: #fff8eb; border: 1px dashed #f59e0b; padding: 7px 10px; border-radius: 5px; font-size: 11px; margin-top: 10px; color: #92400e; }
+    .hint strong { color: #78350f; }
+    .browser-url { background: #f0f0f0; padding: 5px 10px; border-radius: 4px; font: 9.5px/1.4 ui-monospace, monospace; overflow-x: auto; white-space: nowrap; margin-bottom: 10px; }
+    .browser-url strong { color: #b4451a; }
+    .advertiser-blank { text-align: center; padding: 30px 12px; color: #999; font-size: 11.5px; }
+    .product-card { border: 1px solid #e0e0e0; border-radius: 7px; padding: 11px; margin-bottom: 10px; }
+    .product-card h3 { font-size: 12.5px; margin-bottom: 3px; }
+    .product-card .price { font-size: 14px; color: #b4451a; font-weight: 700; margin: 4px 0; }
+    .product-card .desc { color: #666; font-size: 11px; margin-bottom: 8px; }
+    .btn { background: #b4451a; color: white; border: 0; padding: 7px 12px; font-size: 11.5px; font-weight: 600; border-radius: 4px; cursor: pointer; margin-right: 4px; }
+    .btn:hover { background: #9a3209; }
+    .btn.secondary { background: #333; }
+    .btn.secondary:hover { background: #444; }
+    .server-content { background: #0c1117; color: #c9d1d9; padding: 12px 14px; font: 11px/1.55 ui-monospace, "SF Mono", monospace; flex: 1; overflow-y: auto; }
+    .server-content .line { margin-bottom: 2px; }
+    .server-content .ok { color: #86efac; }
+    .server-content .out { color: #fbbf24; }
+    .server-content .in { color: #93c5fd; }
+    .server-content .note { color: #6b7280; font-style: italic; }
+    .openai-pane { background: white; padding: 12px 18px; overflow-y: auto; display: flex; flex-direction: column; }
+    .openai-pane h3 { font-size: 13px; font-weight: 700; margin-bottom: 8px; color: #1a1a1a; display: flex; align-items: center; gap: 8px; }
+    .openai-pane h3::before { content: ''; width: 8px; height: 8px; background: #fb923c; border-radius: 50%; }
+    .openai-pane h3 .mode-badge { margin-left: auto; font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 10px; background: #f3f4f6; color: #555; text-transform: uppercase; letter-spacing: 0.04em; }
+    .openai-pane h3 .mode-badge.aggressive { background: #fef3c7; color: #92400e; }
+    .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 10px; }
+    .stat-card { background: #f9f7f1; border: 1px solid #e8e3d6; padding: 7px 10px; border-radius: 5px; }
+    .stat-card .label { font-size: 9.5px; color: #666; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; }
+    .stat-card .value { font-size: 20px; font-weight: 700; color: #1a1a1a; margin-top: 1px; line-height: 1.1; }
+    .stat-card.dedup { background: #fdf3eb; border-color: #f59e0b; }
+    .stat-card.dedup .value { color: #b4451a; }
+    .stat-card.dedup .label { color: #92400e; }
+    .events-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+    .events-table th { text-align: left; padding: 5px 7px; background: #f5f5f0; font-size: 9.5px; color: #666; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; border-bottom: 1px solid #ddd; }
+    .events-table td { padding: 5px 7px; border-bottom: 1px solid #f0f0f0; font-family: ui-monospace, monospace; font-size: 10.5px; }
+    .events-table tr.deduped { background: #fdf3eb; }
+    .events-table tr.deduped td { color: #92400e; }
+    .events-table .src-pill { display: inline-block; padding: 1px 5px; border-radius: 3px; font-size: 9px; font-weight: 700; letter-spacing: 0.03em; }
+    .src-pill.chatgpt { background: #1a1a1a; color: white; }
+    .src-pill.pixel   { background: #dbeafe; color: #1e40af; }
+    .src-pill.capi    { background: #dcfce7; color: #166534; }
+    .check { color: #16a34a; font-weight: 700; }
+    .arrows-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 200; }
+    .packet { position: absolute; padding: 3px 9px; border-radius: 12px; font-size: 10.5px; font-weight: 600; color: white; box-shadow: 0 4px 14px rgba(0,0,0,0.25); opacity: 0; transform: translate(-50%, -50%); transition: all 1.2s cubic-bezier(0.4, 0, 0.2, 1); pointer-events: none; white-space: nowrap; }
+    .packet.show { opacity: 1; }
+    .packet.pixel   { background: #2563eb; }
+    .packet.capi    { background: #16a34a; }
+    .packet.chatgpt { background: #1a1a1a; }
+    .packet.internal { background: #6366f1; }
+    .step-indicator { position: fixed; bottom: 14px; left: 50%; transform: translateX(-50%); background: rgba(26,26,26,0.95); color: white; padding: 9px 16px; border-radius: 7px; font-size: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.2); z-index: 300; opacity: 0; transition: opacity 0.3s; max-width: 80vw; pointer-events: none; }
+    .step-indicator.show { opacity: 1; }
+    .step-indicator .step-num { color: #fb923c; font-weight: 700; margin-right: 7px; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <h1>OpenAI Ads · <span class="accent">End-to-End Reconciliation</span></h1>
+      <div class="controls">
+        <span class="lbl">CAPI mode:</span>
+        <div class="mode-toggle" id="mode-toggle">
+          <button class="mode-btn active" data-mode="conservative">Conservative</button>
+          <button class="mode-btn" data-mode="aggressive">Aggressive</button>
+        </div>
+        <span class="lbl">Speed:</span>
+        <select id="speed">
+          <option value="3000">Slow</option>
+          <option value="1600" selected>Normal</option>
+          <option value="700">Fast</option>
+        </select>
+        <button id="play">▶ Play Full Flow</button>
+        <button id="reset" class="ghost">↻ Reset</button>
+      </div>
+    </header>
+
+    <div class="top-row">
+      <div class="pane" id="pane-chatgpt">
+        <div class="pane-header"><span><span class="pane-tag publisher">PUBLISHER</span> &nbsp; chatgpt.com</span></div>
+        <div class="pane-content">
+          <div class="chat-bubble user">What's a good mattress for back pain?</div>
+          <div class="chat-bubble assistant">
+            For back pain, look for medium-firm mattresses with strong lumbar support:
+            <ul>
+              <li>Saatva Classic — luxury hybrid</li>
+              <li>Helix Midnight Luxe — side sleepers</li>
+              <li>Nectar Premier — memory foam</li>
+            </ul>
+            <div class="ad-card" onclick="step('click_ad')">
+              <div class="sponsored">SPONSORED</div>
+              <h3>Mattress.co · Spring Sale</h3>
+              <p>Premium back-support mattresses. 100-night trial.</p>
+              <div class="url">shop.mattress.co →</div>
+            </div>
+            <div class="hint"><strong>Step 1:</strong> Pick a CAPI mode above, then click ▶ Play Full Flow — or click the sponsored card to walk it manually.</div>
+          </div>
+        </div>
+        <div class="pane-console" id="console-chatgpt"><div class="entry note">// chatgpt.com internal ad telemetry</div></div>
+      </div>
+
+      <div class="pane" id="pane-adv-browser">
+        <div class="pane-header"><span><span class="pane-tag browser">ADV BROWSER</span> &nbsp; shop.mattress.co</span></div>
+        <div class="pane-content" id="adv-browser-content"><div class="advertiser-blank">← Click sponsored card to land here.</div></div>
+        <div class="pane-console" id="console-adv-browser"><div class="entry note">// oaiq pixel events (browser-side)</div></div>
+      </div>
+
+      <div class="pane" id="pane-adv-server">
+        <div class="pane-header"><span><span class="pane-tag server">ADV SERVER</span> &nbsp; mattress.co backend</span></div>
+        <div class="server-content" id="server-content">
+          <div class="line note">$ node server.js</div>
+          <div class="line ok">[backend] Express listening on :3000</div>
+          <div class="line note">// Waiting for webhooks…</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="openai-pane">
+      <h3>OpenAI Server · Event Reconciliation Dashboard <span class="mode-badge" id="mode-badge">conservative mode</span></h3>
+      <div class="stats-row">
+        <div class="stat-card"><div class="label">Ad Impressions</div><div class="value" id="stat-impressions">0</div></div>
+        <div class="stat-card"><div class="label">Pixel Events</div><div class="value" id="stat-pixel">0</div></div>
+        <div class="stat-card"><div class="label">CAPI Events</div><div class="value" id="stat-capi">0</div></div>
+        <div class="stat-card dedup"><div class="label">✓ Deduped Conversions</div><div class="value" id="stat-dedup">0</div></div>
+      </div>
+      <table class="events-table">
+        <thead><tr><th>Time</th><th>Source</th><th>Event</th><th>Identifier</th><th>Status</th></tr></thead>
+        <tbody id="events-body"><tr><td colspan="5" style="text-align: center; color: #999; padding: 14px;">Waiting for events…</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="arrows-overlay" id="arrows"></div>
+  <div class="step-indicator" id="step-indicator"></div>
+
+  <script>
+    const state = {
+      mode: 'conservative',     // 'conservative' | 'aggressive'
+      oppref: null,
+      orderId: null,
+      currentClicks: 0,
+      stats: { impressions: 0, pixel: 0, capi: 0, dedup: 0 },
+      isPlaying: false,
+      isEmpty: true,
+    };
+
+    const $ = id => document.getElementById(id);
+    const now = () => new Date().toLocaleTimeString('en-US', { hour12: false });
+    const delay = ms => new Promise(r => setTimeout(r, ms));
+    const getSpeed = () => parseInt($('speed').value);
+    const highlight = (id, on) => $(id).classList.toggle('firing', on);
+
+    function showStep(num, text) { const el = $('step-indicator'); el.innerHTML = `<span class="step-num">STEP ${num}</span>${text}`; el.classList.add('show'); }
+    function hideStep() { $('step-indicator').classList.remove('show'); }
+
+    function log(consoleId, msg, type = '') {
+      const c = $(consoleId);
+      const e = document.createElement('div');
+      e.className = 'entry ' + type;
+      e.textContent = msg ? `[${now()}] ${msg}` : '';
+      c.appendChild(e); c.scrollTop = c.scrollHeight;
+    }
+    function serverLog(msg, type = '') {
+      const c = $('server-content');
+      const e = document.createElement('div');
+      e.className = 'line ' + type;
+      e.textContent = msg ? `[${now()}] ${msg}` : ' ';
+      c.appendChild(e); c.scrollTop = c.scrollHeight;
+    }
+
+    function addEvent(source, eventType, identifier, status = 'received') {
+      if (state.isEmpty) { $('events-body').innerHTML = ''; state.isEmpty = false; }
+      const row = document.createElement('tr');
+      const s = source.toLowerCase();
+      row.dataset.identifier = identifier;
+      row.dataset.source = s;
+      row.dataset.eventType = eventType;
+      row.innerHTML = `<td>${now()}</td><td><span class="src-pill ${s}">${source.toUpperCase()}</span></td><td>${eventType}</td><td>${identifier}</td><td>${status}</td>`;
+      $('events-body').appendChild(row);
+      state.stats[s === 'chatgpt' ? 'impressions' : s]++;
+      updateStats();
+      checkAndDedupe(identifier);
+    }
+
+    // Dedup any identifier that has BOTH a pixel and a capi event.
+    // Conversion counter only counts deduped order_created identifiers.
+    function checkAndDedupe(id) {
+      const matching = [];
+      $('events-body').querySelectorAll('tr').forEach(r => { if (r.dataset.identifier === id) matching.push(r); });
+      const hasPixel = matching.some(r => r.dataset.source === 'pixel');
+      const hasCapi  = matching.some(r => r.dataset.source === 'capi');
+      if (hasPixel && hasCapi) {
+        matching.forEach(r => {
+          if (!r.classList.contains('deduped')) {
+            r.classList.add('deduped');
+            r.cells[4].innerHTML = '<span class="check">✓</span> matched';
+          }
+        });
+        const conversions = new Set();
+        $('events-body').querySelectorAll('tr.deduped').forEach(r => {
+          if (r.dataset.eventType === 'order_created') conversions.add(r.dataset.identifier);
+        });
+        state.stats.dedup = conversions.size;
+        updateStats();
+      }
+    }
+
+    function updateStats() {
+      $('stat-impressions').textContent = state.stats.impressions;
+      $('stat-pixel').textContent = state.stats.pixel;
+      $('stat-capi').textContent = state.stats.capi;
+      $('stat-dedup').textContent = state.stats.dedup;
+    }
+
+    async function sendPacket(sourcePaneId, label, kind) {
+      const s = $(sourcePaneId).getBoundingClientRect();
+      const t = document.querySelector('.openai-pane').getBoundingClientRect();
+      const p = document.createElement('div');
+      p.className = 'packet ' + kind;
+      p.textContent = label;
+      p.style.left = (s.left + s.width / 2) + 'px';
+      p.style.top = (s.bottom - 16) + 'px';
+      $('arrows').appendChild(p);
+      await delay(20); p.classList.add('show');
+      await delay(40);
+      p.style.left = (t.left + t.width / 2) + 'px';
+      p.style.top = (t.top + 40) + 'px';
+      await delay(1200); p.style.opacity = '0';
+      await delay(300); p.remove();
+    }
+
+    async function sendInternalPacket(fromId, toId, label) {
+      const f = $(fromId).getBoundingClientRect();
+      const t = $(toId).getBoundingClientRect();
+      const p = document.createElement('div');
+      p.className = 'packet internal show';
+      p.textContent = label;
+      p.style.left = (f.left + f.width / 2) + 'px';
+      p.style.top = (f.top + f.height / 2) + 'px';
+      $('arrows').appendChild(p);
+      await delay(40);
+      p.style.left = (t.left + t.width / 2) + 'px';
+      p.style.top = (t.top + t.height / 2) + 'px';
+      await delay(900); p.style.opacity = '0';
+      await delay(300); p.remove();
+    }
+
+    const rand = (prefix) => prefix + '_' + Math.random().toString(36).slice(2, 8);
+
+    // Mirror a non-conversion event via CAPI (aggressive mode only)
+    async function mirrorViaCapi(eventType, id) {
+      await delay(getSpeed() / 2);
+      highlight('pane-adv-server', true);
+      serverLog(`── server-side tagging: mirror ${eventType} via CAPI ──`, 'note');
+      serverLog(`POST bzr.openai.com/v1/events { type: "${eventType}", id: "${id}", oppref: "…" }`, 'out');
+      sendPacket('pane-adv-server', `CAPI · ${eventType}`, 'capi');
+      await delay(600);
+      addEvent('capi', eventType, id);
+      serverLog(`← 202 Accepted`, 'in');
+      await delay(300);
+      highlight('pane-adv-server', false);
+    }
+
+    async function runFullFlow() {
+      if (state.isPlaying) return;
+      reset();
+      state.isPlaying = true;
+      $('play').disabled = true;
+      await delay(400);
+
+      showStep(1, 'ChatGPT serves ad → fires internal impression telemetry');
+      highlight('pane-chatgpt', true);
+      log('console-chatgpt', '→ POST chatgpt.com/api/ad-track { type: "impression", ad_id: "mattress-spring" }', 'outgoing');
+      sendPacket('pane-chatgpt', 'impression', 'chatgpt');
+      await delay(600);
+      addEvent('chatgpt', 'ad_impression', rand('imp'));
+      log('console-chatgpt', '← 202 Accepted', 'incoming');
+      await delay(getSpeed());
+      highlight('pane-chatgpt', false);
+
+      await step('click_ad', true);
+      await delay(getSpeed());
+      await step('add_to_cart', true);
+      await delay(getSpeed());
+      await step('buy_now', true);
+      await delay(getSpeed());
+
+      showStep(7, 'User clicks Buy now AGAIN — same orderId → dedup → still 1 conversion');
+      await delay(500);
+      await step('buy_now', true);
+      await delay(getSpeed());
+
+      showStep(8, 'NEW shopping session: Add to cart again resets the order session');
+      await delay(500);
+      await step('add_to_cart', true);
+      await delay(getSpeed());
+
+      showStep(9, 'Second purchase → fresh orderId → SEPARATE conversion (count → 2)');
+      await delay(500);
+      await step('buy_now', true);
+
+      hideStep();
+      state.isPlaying = false;
+      $('play').disabled = false;
+    }
+
+    async function step(action, fromAutoFlow = false) {
+      const aggressive = state.mode === 'aggressive';
+
+      if (action === 'click_ad') {
+        showStep(2, 'User clicks ad → ChatGPT logs click, redirects with oppref');
+        highlight('pane-chatgpt', true);
+        log('console-chatgpt', '→ User clicked sponsored card', 'outgoing');
+        log('console-chatgpt', '→ POST chatgpt.com/api/ad-track { type: "click" }', 'outgoing');
+        sendPacket('pane-chatgpt', 'click', 'chatgpt');
+        await delay(600);
+        addEvent('chatgpt', 'ad_click', rand('clk'));
+        const oppref = 'gAAAAAB' + Math.random().toString(36).slice(2, 14);
+        state.oppref = oppref;
+        log('console-chatgpt', `← Redirecting to: shop.mattress.co/?oppref=${oppref.slice(0,16)}…`, 'incoming');
+        await delay(getSpeed());
+        highlight('pane-chatgpt', false);
+
+        await delay(300);
+        showStep(3, 'Browser lands → oaiq SDK captures oppref, fires page_viewed' + (aggressive ? ' (mirrored via CAPI)' : ''));
+        loadAdvertiserPage(oppref);
+        await delay(400);
+        const pvId = rand('evt_pv');
+        highlight('pane-adv-browser', true);
+        log('console-adv-browser', '→ oaiq SDK auto-captures oppref into __oppref cookie', 'info');
+        log('console-adv-browser', `→ oaiq("measure", "page_viewed", {}, { event_id: "${pvId}" })`, 'outgoing');
+        sendPacket('pane-adv-browser', 'pixel · page_viewed', 'pixel');
+        await delay(700);
+        addEvent('pixel', 'page_viewed', pvId);
+        log('console-adv-browser', '← 202 Accepted', 'incoming');
+        await delay(getSpeed() / 2);
+        highlight('pane-adv-browser', false);
+        if (aggressive) await mirrorViaCapi('page_viewed', pvId);
+        await delay(getSpeed() / 2);
+      }
+
+      else if (action === 'add_to_cart') {
+        state.orderId = null;       // new shopping intent → fresh order session
+        state.currentClicks = 0;
+        showStep(4, 'Add to cart → pixel fires items_added' + (aggressive ? ' (mirrored via CAPI)' : ' (no CAPI — conservative)'));
+        const iacId = rand('evt_iac');
+        highlight('pane-adv-browser', true);
+        log('console-adv-browser', '→ User clicked "Add to cart" (order session reset)', 'outgoing');
+        log('console-adv-browser', `→ oaiq("measure", "items_added", { amount: 259900 }, { event_id: "${iacId}" })`, 'outgoing');
+        sendPacket('pane-adv-browser', 'pixel · items_added', 'pixel');
+        await delay(700);
+        addEvent('pixel', 'items_added', iacId);
+        log('console-adv-browser', '← 202 Accepted', 'incoming');
+        await delay(getSpeed() / 2);
+        highlight('pane-adv-browser', false);
+        if (aggressive) await mirrorViaCapi('items_added', iacId);
+        await delay(getSpeed() / 2);
+      }
+
+      else if (action === 'buy_now') {
+        state.currentClicks++;
+        const isRepeat = state.currentClicks > 1;
+        if (!state.orderId) state.orderId = rand('order');
+        const orderId = state.orderId;
+
+        if (!isRepeat) showStep(5, 'Buy now → browser POSTs /checkout to advertiser backend');
+        else showStep(7, `REPEAT click → same order_id → dedup`);
+
+        highlight('pane-adv-browser', true);
+        log('console-adv-browser', `→ User clicked "Buy now"${isRepeat ? ' (repeat)' : ''}`, 'outgoing');
+        log('console-adv-browser', `→ POST shop.mattress.co/api/checkout { sku: "sku_123", amount: 259900 }`, 'outgoing');
+        sendInternalPacket('pane-adv-browser', 'pane-adv-server', 'POST /checkout');
+        await delay(700);
+        highlight('pane-adv-browser', false);
+
+        highlight('pane-adv-server', true);
+        serverLog(`POST /api/checkout received`, 'in');
+        serverLog(`processing payment via Stripe…`, 'note');
+        await delay(getSpeed() / 2);
+        serverLog(`Stripe charged · order_id = ${orderId}${isRepeat ? '  ⚠ duplicate (idempotent)' : ''}`, 'ok');
+        serverLog(`returning 200 OK to browser`, 'out');
+        await delay(400);
+        highlight('pane-adv-server', false);
+
+        await delay(300);
+        if (!isRepeat) showStep(6, `Browser → /success → pixel fires order_created (event_id=${orderId})`);
+        highlight('pane-adv-browser', true);
+        log('console-adv-browser', `← 200 OK · navigating to /success`, 'incoming');
+        log('console-adv-browser', `→ oaiq("measure", "order_created", {…}, { event_id: "${orderId}" })`, 'outgoing');
+        sendPacket('pane-adv-browser', `pixel · ${orderId}`, 'pixel');
+        await delay(700);
+        addEvent('pixel', 'order_created', orderId);
+        log('console-adv-browser', `← 202 Accepted`, 'incoming');
+        await delay(getSpeed() / 2);
+        highlight('pane-adv-browser', false);
+
+        // order_created ALWAYS fires CAPI (both modes) — it's the key conversion
+        await delay(getSpeed() / 2);
+        highlight('pane-adv-server', true);
+        serverLog(``, '');
+        serverLog(`── Stripe webhook arrives async ──`, 'note');
+        serverLog(`POST /webhooks/stripe { order_id: "${orderId}" }`, 'in');
+        serverLog(`look up oppref from session → ${state.oppref.slice(0, 14)}…`, 'note');
+        serverLog(`POST bzr.openai.com/v1/events (Bearer)  { type:"order_created", id:"${orderId}" }`, 'out');
+        sendPacket('pane-adv-server', `CAPI · ${orderId}`, 'capi');
+        await delay(700);
+        addEvent('capi', 'order_created', orderId);
+        serverLog(`← 202 Accepted from OpenAI`, 'in');
+        await delay(500);
+        serverLog(isRepeat
+          ? `✓ OpenAI saw id "${orderId}" multiple times → still ONE conversion`
+          : `✓ OpenAI matched pixel + CAPI by id → ONE conversion`, 'ok');
+        await delay(getSpeed());
+        highlight('pane-adv-server', false);
+      }
+    }
+
+    function loadAdvertiserPage(oppref) {
+      $('adv-browser-content').innerHTML = `
+        <div class="browser-url">shop.mattress.co/?<strong>oppref=${oppref.slice(0, 18)}…</strong>&utm_source=chatgpt</div>
+        <div class="product-card">
+          <h3>King Hybrid Mattress</h3>
+          <div class="price">$2,599.00</div>
+          <div class="desc">Memory foam with lumbar zone reinforcement. 100-night trial.</div>
+          <button class="btn" onclick="step('add_to_cart')">Add to cart</button>
+          <button class="btn secondary" onclick="step('buy_now')">Buy now</button>
+        </div>
+        <div class="hint">
+          <strong>Buy now twice</strong> → same orderId → dedup (1 conversion). <strong>Add to cart, then Buy now</strong> → fresh orderId → separate conversion. <strong>Toggle CAPI mode</strong> (top bar) to see page_viewed + items_added also mirror via CAPI.
+        </div>
+      `;
+    }
+
+    function reset() {
+      state.oppref = null;
+      state.orderId = null;
+      state.currentClicks = 0;
+      state.stats = { impressions: 0, pixel: 0, capi: 0, dedup: 0 };
+      state.isEmpty = true;
+      updateStats();
+      $('events-body').innerHTML = '<tr><td colspan="5" style="text-align: center; color: #999; padding: 14px;">Waiting for events…</td></tr>';
+      $('console-chatgpt').innerHTML = '<div class="entry note">// chatgpt.com internal ad telemetry</div>';
+      $('console-adv-browser').innerHTML = '<div class="entry note">// oaiq pixel events (browser-side)</div>';
+      $('server-content').innerHTML = '<div class="line note">$ node server.js</div><div class="line ok">[backend] Express listening on :3000</div><div class="line note">// Waiting for webhooks…</div>';
+      $('adv-browser-content').innerHTML = '<div class="advertiser-blank">← Click sponsored card to land here.</div>';
+      $('arrows').innerHTML = '';
+      hideStep();
+    }
+
+    // Mode toggle
+    document.querySelectorAll('.mode-btn').forEach(btn => {
+      btn.onclick = () => {
+        if (state.isPlaying) return;
+        document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        state.mode = btn.dataset.mode;
+        const badge = $('mode-badge');
+        badge.textContent = state.mode + ' mode';
+        badge.classList.toggle('aggressive', state.mode === 'aggressive');
+        reset();
+      };
+    });
+
+    $('play').onclick = runFullFlow;
+    $('reset').onclick = reset;
+    window.step = step;
+  </script>
+</body>
+</html>

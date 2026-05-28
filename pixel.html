@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>OpenAI Pixel · Client-Side Reference</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!--
+    ════════════════════════════════════════════════════════════════
+    PART 1: THE INIT SNIPPET — goes in <head> of EVERY page
+    ════════════════════════════════════════════════════════════════
+    The IIFE asynchronously loads oaiq.min.js from OpenAI's CDN, then
+    oaiq("init", ...) registers the pixel ID. After this runs, the
+    advertiser can call oaiq("measure", ...) anywhere to fire events.
+
+    In production: deployed via a tag manager (Google Tag Manager,
+    Tealium, Adobe Launch), NOT hand-coded into every template.
+    Tag managers also handle dedup, consent gating, and version pinning.
+
+    With the fake pixel ID below, the SDK will still load from CDN,
+    but the measure call will 404 against bzr.openai.com — that's fine.
+    The point is to see the call shape, not to ingest real events.
+  -->
+  <script>
+    (function (w, d, s, u) {
+      if (w.oaiq) return;
+      var q = w.oaiq = function () { q.q.push(arguments); };
+      q.q = [];
+      var js = d.createElement(s); js.async = true; js.src = u;
+      var f = d.getElementsByTagName(s)[0];
+      f.parentNode.insertBefore(js, f);
+    })(window, document, "script", "https://bzrcdn.openai.com/sdk/oaiq.min.js");
+
+    oaiq("init", { pixelId: "demo_pixel_abc123" });  // ◄ your pixel ID goes here
+  </script>
+
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font: 15px/1.55 -apple-system, BlinkMacSystemFont, sans-serif;
+      max-width: 760px;
+      margin: 48px auto;
+      padding: 0 24px;
+      color: #1a1a1a;
+    }
+    h1 { font-size: 28px; margin-bottom: 8px; }
+    h2 { font-size: 19px; margin-top: 36px; padding-top: 24px; border-top: 1px solid #ddd; }
+    .sub { color: #666; margin-top: 0; }
+    .box {
+      background: #faf8f3;
+      border-left: 3px solid #b4451a;
+      padding: 14px 18px;
+      border-radius: 4px;
+      margin: 20px 0;
+    }
+    .box.success { background: #f0f9f0; border-color: #16a34a; }
+    code {
+      background: #ececec;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-size: 13px;
+      font-family: ui-monospace, SFMono-Regular, monospace;
+    }
+    pre {
+      background: #1a1a1a;
+      color: #d4f1c4;
+      padding: 14px 16px;
+      border-radius: 6px;
+      overflow-x: auto;
+      font: 12px/1.5 ui-monospace, SFMono-Regular, monospace;
+    }
+    button {
+      background: #b4451a;
+      color: white;
+      border: 0;
+      padding: 11px 20px;
+      font-size: 14px;
+      font-weight: 600;
+      border-radius: 5px;
+      cursor: pointer;
+      margin: 4px 8px 4px 0;
+    }
+    button:hover { background: #9a3209; }
+    button:disabled { background: #ccc; cursor: not-allowed; }
+    .small { font-size: 12px; color: #777; }
+  </style>
+</head>
+
+<body>
+  <h1>OpenAI Pixel · Client-Side Reference</h1>
+  <p class="sub">The browser-side half of the CAPI integration. Pairs with <code>send-events.js</code>.</p>
+
+  <div class="box">
+    <strong>How to use this page:</strong> open browser DevTools (Cmd+Option+I on Mac), go to the <strong>Network</strong> tab, filter for <code>bzr</code>. Click a button below to fire an event. You'll see a request to <code>bzr.openai.com/v1/events</code> (or <code>bzrcdn.openai.com</code> for the SDK itself). With the fake pixel ID, it'll 404 — but the call shape and headers are real.
+  </div>
+
+  <h2>The init snippet (already running)</h2>
+  <p>Right now, this page's <code>&lt;head&gt;</code> has the snippet that loaded the SDK. Check the Network tab — you should see a request to <code>bzrcdn.openai.com/sdk/oaiq.min.js</code> already completed.</p>
+
+  <p>The init snippet — copy this into your site's template:</p>
+  <pre>&lt;script&gt;
+  (function (w, d, s, u) {
+    if (w.oaiq) return;
+    var q = w.oaiq = function () { q.q.push(arguments); };
+    q.q = [];
+    var js = d.createElement(s); js.async = true; js.src = u;
+    var f = d.getElementsByTagName(s)[0];
+    f.parentNode.insertBefore(js, f);
+  })(window, document, "script", "https://bzrcdn.openai.com/sdk/oaiq.min.js");
+
+  oaiq("init", { pixelId: "&lt;YOUR-PIXEL-ID&gt;" });
+&lt;/script&gt;</pre>
+
+  <h2>Firing events</h2>
+  <p>Once init has run, the advertiser fires events with <code>oaiq("measure", &lt;event_type&gt;, &lt;event_props&gt;, &lt;event_options&gt;)</code>. Click any button to fire a sample event and watch the Network tab.</p>
+
+  <p>
+    <button onclick="firePageView()">Fire <code>page_viewed</code></button>
+    <button onclick="fireAddToCart()">Fire <code>items_added</code></button>
+    <button onclick="fireOrder()">Fire <code>order_created</code></button>
+  </p>
+
+  <pre id="output">Click a button to fire an event. Output will appear here, and the request will show in DevTools → Network.</pre>
+
+  <h2>The dedup contract</h2>
+  <p>The critical field in the <code>order_created</code> event is <code>event_id</code> in the third argument. This <strong>must match the <code>id</code> field</strong> that your server-side CAPI call (<code>send-events.js</code>) sends for the same conversion. OpenAI dedupes by matching these values — same identifier flows through both pixel and CAPI, OpenAI counts the conversion once.</p>
+
+  <div class="box success">
+    <strong>Use the advertiser's authoritative order ID</strong> — Shopify order number, Stripe PaymentIntent ID, Salesforce opportunity ID. Whatever value the advertiser already considers their source of truth. Don't generate a UUID in the pixel that the server can't see.
+  </div>
+
+  <h2>What this looks like with a real ChatGPT click</h2>
+  <p>When a user clicks an OpenAI ad and lands here, the URL would look like:</p>
+  <pre>https://shop.example.com/checkout/success?<strong>oppref</strong>=gAAAAABqCQzH...&utm_source=chatgpt&utm_medium=cpc&...</pre>
+  <p>The pixel's SDK <strong>automatically captures <code>oppref</code></strong> from the URL and stores it in a first-party cookie called <code>__oppref</code>. Any subsequent <code>oaiq("measure", ...)</code> calls in that user's session will include the oppref automatically. <strong>This is the one thing CAPI doesn't do</strong> — server-side, you have to capture <code>oppref</code> yourself from the inbound URL and replay it on every event.</p>
+
+  <script>
+    // ───────────────────────────────────────────────────
+    // Sample event firers — each demonstrates a different event type
+    // ───────────────────────────────────────────────────
+
+    function fmt(label, eventProps, eventOptions) {
+      return '✓ Fired oaiq("measure", "' + label + '", ...)\n\n' +
+             'Event props:\n' + JSON.stringify(eventProps, null, 2) + '\n\n' +
+             'Event options (dedup):\n' + JSON.stringify(eventOptions, null, 2) + '\n\n' +
+             '→ Check DevTools → Network for the bzr.openai.com call.';
+    }
+
+    function firePageView() {
+      const props = { type: "contents", contents: [] };
+      oaiq("measure", "page_viewed", props);
+      document.getElementById('output').textContent = fmt('page_viewed', props, '(no event_id needed — page views aren\'t deduped)');
+    }
+
+    function fireAddToCart() {
+      const props = {
+        type: "contents",
+        amount: 4299,
+        currency: "USD",
+        contents: [{ id: "sku_123", name: "Starter bundle", content_type: "product", quantity: 1 }]
+      };
+      oaiq("measure", "items_added", props);
+      document.getElementById('output').textContent = fmt('items_added', props, '(no event_id — add_to_cart isn\'t usually deduped with CAPI)');
+    }
+
+    function fireOrder() {
+      const orderId = 'order_' + Math.floor(Math.random() * 100000);
+      const props = {
+        type: "contents",
+        amount: 2599,
+        currency: "USD",
+        contents: [{ id: "sku_123", name: "Starter bundle", content_type: "product", quantity: 1 }]
+      };
+      const options = { event_id: orderId };
+      oaiq("measure", "order_created", props, options);
+      document.getElementById('output').textContent =
+        '✓ Fired oaiq("measure", "order_created", ...)\n\n' +
+        'Event props:\n' + JSON.stringify(props, null, 2) + '\n\n' +
+        'Event options:\n' + JSON.stringify(options, null, 2) + '\n\n' +
+        '◄ event_id = "' + orderId + '"\n' +
+        '   This is the DEDUP KEY.\n' +
+        '   Your server would fire send-events.js with id = "' + orderId + '"\n' +
+        '   OpenAI matches the two and counts the conversion once.\n\n' +
+        '→ Check DevTools → Network for the bzr.openai.com call.';
+    }
+  </script>
+</body>
+</html>
